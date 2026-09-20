@@ -1,0 +1,92 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: libraryhub-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: libraryhub
+      MYSQL_USER: library
+      MYSQL_PASSWORD: library
+    ports: ["3306:3306"]
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ulibrary", "-plibrary"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  cassandra:
+    image: cassandra:4.1
+    container_name: libraryhub-cassandra
+    ports: ["9042:9042"]
+    volumes:
+      - cassandra-data:/var/lib/cassandra
+      - ./cassandra:/cassandra-init:ro
+
+  mongodb:
+    image: mongo:7
+    container_name: libraryhub-mongodb
+    ports: ["27017:27017"]
+    volumes:
+      - mongo-data:/data/db
+      - ./mongodb/init.js:/docker-entrypoint-initdb.d/init.js:ro
+
+  redis:
+    image: redis:7
+    container_name: libraryhub-redis
+    ports: ["6379:6379"]
+    volumes:
+      - redis-data:/data
+
+  opensearch:
+    image: opensearchproject/opensearch:2.15.0
+    container_name: libraryhub-opensearch
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports: ["9200:9200"]
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3
+    container_name: libraryhub-clickhouse
+    ports: ["8123:8123", "9001:9000"]
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - ./clickhouse/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+      - ./clickhouse/data.sql:/docker-entrypoint-initdb.d/data.sql:ro
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.1
+    container_name: libraryhub-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: libraryhub-kafka
+    depends_on: [zookeeper]
+    ports: ["9092:9092"]
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_INTERNAL://0.0.0.0:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+volumes:
+  mysql-data:
+  cassandra-data:
+  mongo-data:
+  redis-data:
+  opensearch-data:
+  clickhouse-data:

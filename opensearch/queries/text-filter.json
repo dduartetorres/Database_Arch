@@ -1,0 +1,1 @@
+{"query":{"bool":{"must":[{"multi_match":{"query":"database","fields":["title","description","keywords"]}}],"filter":[{"term":{"category":"Technical"}}]}}}

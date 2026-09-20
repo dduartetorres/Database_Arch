@@ -1,0 +1,1 @@
+{"mappings":{"properties":{"isbn":{"type":"keyword"},"title":{"type":"text"},"author":{"type":"text"},"description":{"type":"text"},"category":{"type":"keyword"},"year":{"type":"integer"},"keywords":{"type":"keyword"}}}}

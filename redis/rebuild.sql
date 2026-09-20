@@ -1,0 +1,4 @@
+-- Rebuild Redis from MySQL source of truth:
+-- SELECT b.book_id, COUNT(c.copy_id) AS available_copies
+-- FROM books b LEFT JOIN copies c ON c.book_id=b.book_id AND c.status='AVAILABLE'
+-- GROUP BY b.book_id;
