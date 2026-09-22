@@ -10,7 +10,11 @@ services:
     ports: ["3306:3306"]
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./mysql:/docker-entrypoint-initdb.d:ro
+      # Init scripts run in alphabetical order; prefixes enforce schema -> procedures -> data.
+      # queries.sql is evidence (and contains an intentionally failing CALL), so it is not run at init.
+      - ./mysql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./mysql/procedures.sql:/docker-entrypoint-initdb.d/02-procedures.sql:ro
+      - ./mysql/data.sql:/docker-entrypoint-initdb.d/03-data.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ulibrary", "-plibrary"]
       interval: 5s
@@ -23,7 +27,23 @@ services:
     ports: ["9042:9042"]
     volumes:
       - cassandra-data:/var/lib/cassandra
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'DESCRIBE KEYSPACES' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+
+  # One-shot job: the Cassandra image has no init-script hook, so load the schema once it is healthy.
+  cassandra-init:
+    image: cassandra:4.1
+    container_name: libraryhub-cassandra-init
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    volumes:
       - ./cassandra:/cassandra-init:ro
+    entrypoint: ["cqlsh", "cassandra", "-f", "/cassandra-init/schema.cql"]
+    restart: "no"
 
   mongodb:
     image: mongo:7
@@ -52,14 +72,26 @@ services:
     volumes:
       - opensearch-data:/usr/share/opensearch/data
 
+  # One-shot job: create the books index and bulk-load documents (MongoDB remains the source of truth).
+  opensearch-init:
+    image: curlimages/curl:8.8.0
+    container_name: libraryhub-opensearch-init
+    depends_on: [opensearch]
+    volumes:
+      - ./opensearch:/opensearch:ro
+    entrypoint: ["sh", "/opensearch/init.sh"]
+    restart: "no"
+
   clickhouse:
     image: clickhouse/clickhouse-server:24.3
     container_name: libraryhub-clickhouse
-    ports: ["8123:8123", "9001:9000"]
+    # Host port 19000 for the native protocol avoids clashes with other tools that commonly use 9000/9001 (e.g. MinIO).
+    ports: ["8123:8123", "19000:9000"]
     volumes:
       - clickhouse-data:/var/lib/clickhouse
-      - ./clickhouse/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
-      - ./clickhouse/data.sql:/docker-entrypoint-initdb.d/data.sql:ro
+      # Prefixes enforce schema before data (init scripts run alphabetically).
+      - ./clickhouse/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./clickhouse/data.sql:/docker-entrypoint-initdb.d/02-data.sql:ro
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.1

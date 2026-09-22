@@ -1,0 +1,10 @@
+# Files mounted into Linux containers must keep LF endings, even on Windows checkouts.
+*.sh     text eol=lf
+*.sql    text eol=lf
+*.cql    text eol=lf
+*.js     text eol=lf
+*.json   text eol=lf
+*.ndjson text eol=lf
+*.redis  text eol=lf
+*.py     text eol=lf
+*.yml    text eol=lf

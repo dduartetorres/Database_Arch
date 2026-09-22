@@ -1,0 +1,4 @@
+{"index":{"_id":"BOOK-001"}}
+{"isbn":"9780000000011","title":"Distributed Systems in Practice","author":"Marta Silva","description":"A practical guide to distributed databases and event-driven systems.","category":"Technical","year":2024,"keywords":["databases","distributed","kafka"]}
+{"index":{"_id":"BOOK-002"}}
+{"isbn":"9780000000028","title":"SQL Fundamentals","author":"Rui Costa","description":"Relational modelling, SQL queries, indexes and transactions.","category":"Technical","year":2023,"keywords":["sql","relational"]}

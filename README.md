@@ -33,7 +33,7 @@ flowchart LR
 | MongoDB | flexible book catalogue | 27017 |
 | Redis | derived availability cache | 6379 |
 | OpenSearch | text and structured search | 9200 |
-| ClickHouse | analytical queries | 8123 / 9001 |
+| ClickHouse | analytical queries | 8123 / 19000 |
 | Kafka | event transport | 9092 |
 
 ## Start
@@ -43,6 +43,8 @@ docker compose up -d
 # Check service state
 docker compose ps
 ```
+
+MySQL, MongoDB and ClickHouse run their init scripts on first start. Cassandra and OpenSearch are initialised by the one-shot `cassandra-init` and `opensearch-init` containers, which show as `Exited (0)` when they finish successfully. Init scripts only run against empty volumes, so to reset everything and re-run initialisation use `docker compose down -v && docker compose up -d`.
 
 The database init scripts are mounted into the relevant containers. Some services need a few seconds to become ready after startup. Run the commands below after `docker compose ps` shows the containers running.
 
